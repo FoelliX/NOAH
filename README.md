@@ -36,7 +36,7 @@ Furthermore two additional launch parameters can be specified:
 
 ## Publications
 - *Together Strong: Cooperative Android App Analysis* (Felix Pauck, Heike Wehrheim)  
-t.b.a.
+ESEC/FSE 2019 [https://dl.acm.org/citation.cfm?id=3338915](https://dl.acm.org/citation.cfm?id=3338915)
 
 ## License
 NOAH is licensed under the *GNU General Public License v3* (see [LICENSE](https://github.com/FoelliX/NOAH/blob/master/LICENSE)).
