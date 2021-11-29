@@ -10,6 +10,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import de.foellix.aql.Log;
+import de.foellix.aql.helper.FileHelper;
 
 public class Unzipper {
 	public Collection<File> unzip(File apkFile) {
@@ -24,7 +25,8 @@ public class Unzipper {
 						? ze.getName().substring(ze.getName().lastIndexOf("/") + 1)
 						: ze.getName());
 				if (fileName.endsWith(".so")) {
-					final File newFile = new File("data" + File.separator + "temp" + File.separator + fileName);
+					final File newFile = FileHelper.makeUnique(new File(
+							"data" + File.separator + "temp" + File.separator + fileName.replace(".so", "-0.so")));
 
 					final FileOutputStream fos = new FileOutputStream(newFile);
 					int len;

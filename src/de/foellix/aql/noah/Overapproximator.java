@@ -2,22 +2,30 @@ package de.foellix.aql.noah;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import de.foellix.aql.Log;
 import de.foellix.aql.datastructure.Flow;
 import de.foellix.aql.datastructure.Flows;
-import de.foellix.aql.datastructure.KeywordsAndConstants;
 import de.foellix.aql.datastructure.Reference;
+import de.foellix.aql.datastructure.Sink;
+import de.foellix.aql.datastructure.Sinks;
+import de.foellix.aql.datastructure.Source;
+import de.foellix.aql.datastructure.Sources;
 import de.foellix.aql.helper.EqualsHelper;
 import de.foellix.aql.helper.Helper;
+import de.foellix.aql.helper.KeywordsAndConstantsHelper;
 
 public class Overapproximator {
 	private Flows flows;
-	private Collection<String> newSourcesAndSinks;
+	private Sources sources;
+	private Sinks sinks;
+	private Set<String> newSourcesAndSinks;
 
 	public Overapproximator(Collection<Reference> nativeCalls, Collection<Triple> sourcesAndSinksParsed,
 			Collection<Triple> sourcesAndSinksFound) {
-		this.newSourcesAndSinks = new ArrayList<>();
+		this.newSourcesAndSinks = new HashSet<>();
 
 		final Collection<Triple> matches = new ArrayList<>();
 		for (final Triple t1 : sourcesAndSinksFound) {
@@ -30,6 +38,8 @@ public class Overapproximator {
 		}
 
 		this.flows = new Flows();
+		this.sources = new Sources();
+		this.sinks = new Sinks();
 		for (final Reference nativeCall : nativeCalls) {
 			for (final Triple t : matches) {
 				final Flow flow = createFlow(nativeCall, t);
@@ -65,8 +75,8 @@ public class Overapproximator {
 			to = Helper.copy(sourceOrSink);
 			this.newSourcesAndSinks.add(addNativeCall(nativeCall, true));
 		}
-		from.setType(KeywordsAndConstants.REFERENCE_TYPE_FROM);
-		to.setType(KeywordsAndConstants.REFERENCE_TYPE_TO);
+		from.setType(KeywordsAndConstantsHelper.REFERENCE_TYPE_FROM);
+		to.setType(KeywordsAndConstantsHelper.REFERENCE_TYPE_TO);
 
 		final Flow flow = new Flow();
 		flow.getReference().add(from);
@@ -77,8 +87,34 @@ public class Overapproximator {
 
 	private String addNativeCall(Reference nativeCall, boolean isSource) {
 		if (isSource) {
+			final Sink s = new Sink();
+			s.setReference(nativeCall);
+			boolean found = false;
+			for (final Sink sComp : this.sinks.getSink()) {
+				if (EqualsHelper.equals(s, sComp)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				this.sinks.getSink().add(s);
+			}
+
 			return "<" + nativeCall.getStatement().getStatementgeneric() + "> -> _SINK_";
 		} else {
+			final Source s = new Source();
+			s.setReference(nativeCall);
+			boolean found = false;
+			for (final Source sComp : this.sources.getSource()) {
+				if (EqualsHelper.equals(s, sComp)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				this.sources.getSource().add(s);
+			}
+
 			return "<" + nativeCall.getStatement().getStatementgeneric() + "> -> _SOURCE_";
 		}
 	}
@@ -89,5 +125,13 @@ public class Overapproximator {
 
 	public Collection<String> getNewSourcesAndSinks() {
 		return this.newSourcesAndSinks;
+	}
+
+	public Sources getSources() {
+		return this.sources;
+	}
+
+	public Sinks getSinks() {
+		return this.sinks;
 	}
 }

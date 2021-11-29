@@ -21,7 +21,7 @@ public class SourceAndSinkFinder {
 	private List<String> needles;
 	private List<Triple> allTriples;
 
-	public SourceAndSinkFinder(String apkFile) {
+	public SourceAndSinkFinder(String apkFile, boolean deleteFiles) {
 		this.apkFile = new File(apkFile);
 
 		this.needles = new ArrayList<>();
@@ -35,11 +35,13 @@ public class SourceAndSinkFinder {
 		findSourcesAndSinks(disassembledFiles);
 
 		// Delete temporary files
-		for (final File toDelete : unzippedFiles) {
-			toDelete.delete();
-		}
-		for (final File toDelete : disassembledFiles) {
-			toDelete.delete();
+		if (deleteFiles) {
+			for (final File toDelete : unzippedFiles) {
+				toDelete.delete();
+			}
+			for (final File toDelete : disassembledFiles) {
+				toDelete.delete();
+			}
 		}
 	}
 

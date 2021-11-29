@@ -4,21 +4,20 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import de.foellix.aql.datastructure.App;
 import de.foellix.aql.datastructure.Reference;
 import de.foellix.aql.helper.Helper;
+import de.foellix.aql.helper.SootHelper;
 import de.foellix.aql.noah.Triple;
 import soot.Body;
-import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
 import soot.Unit;
 import soot.ValueBox;
 import soot.jimple.internal.JVirtualInvokeExpr;
-import soot.options.Options;
 
 public class NativeCallFinder {
 	File apkFile;
@@ -89,25 +88,19 @@ public class NativeCallFinder {
 	}
 
 	private Collection<SootClass> extract() {
-		// reinitialize
-		soot.G.reset();
+		// Set additional excludes
+		final Set<String> excludesSet = new HashSet<>();
+		excludesSet.addAll(Arrays.asList(SootHelper.getExcludes()));
+		excludesSet.addAll(Arrays.asList(new String[] { "com.google.*", "java.*", "sun.misc.*", "android.*",
+				"org.apache.*", "soot.*", "javax.servlet.*" }));
+		final String[] excludes = excludesSet.toArray(new String[excludesSet.size()]);
+		SootHelper.setExcludes(excludes);
 
-		// Setup Soot
-		Options.v().set_src_prec(Options.src_prec_apk);
-		Options.v().set_allow_phantom_refs(true);
-		final List<String> excludedPacks = new ArrayList<String>(
-				Arrays.asList("com.google.*, java.*, sun.misc.*, android.*, org.apache.*, soot.*, javax.servlet.*"
-						.replaceAll(" ", "").split(",")));
-		Options.v().set_exclude(excludedPacks);
-		Options.v().set_no_bodies_for_excluded(true);
+		// Use no config
+		SootHelper.setNoConfig(true);
 
-		// Input: .apk and Android library
-		Options.v().set_process_dir(Collections.singletonList(this.apkFile.getAbsolutePath()));
-		Options.v().set_force_android_jar("data/android.jar");
-
-		Scene.v().loadNecessaryClasses();
-
-		return filter(Scene.v().getApplicationClasses());
+		// Return classes
+		return filter(SootHelper.getScene(this.apkFile).getApplicationClasses());
 	}
 
 	private Collection<SootClass> filter(Collection<SootClass> classes) {

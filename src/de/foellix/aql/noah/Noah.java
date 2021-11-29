@@ -10,19 +10,20 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 
-import org.fusesource.jansi.AnsiConsole;
-
 import de.foellix.aql.Log;
 import de.foellix.aql.Properties;
 import de.foellix.aql.datastructure.Answer;
 import de.foellix.aql.datastructure.Reference;
 import de.foellix.aql.datastructure.handler.AnswerHandler;
+import de.foellix.aql.helper.CLIHelper;
 import de.foellix.aql.helper.Helper;
 import de.foellix.aql.noah.nativecalls.NativeCallFinder;
 import de.foellix.aql.noah.sourcesandsinks.SourceAndSinkFinder;
 import de.foellix.aql.noah.sourcesandsinks.SourceAndSinkParser;
 
 public class Noah {
+	public boolean deleteFiles = true;
+
 	private String apkFile;
 	private String sourceAndSinkFile;
 
@@ -32,7 +33,6 @@ public class Noah {
 
 	public Noah(String[] args) {
 		// Information
-		AnsiConsole.systemInstall();
 		final String authorStr1 = "Author: " + Properties.info().AUTHOR;
 		final String authorStr2 = "(" + Properties.info().AUTHOR_EMAIL + ")";
 		final String centerspace0 = "               "
@@ -51,7 +51,7 @@ public class Noah {
 
 		// Get files
 		if (args.length <= 0) {
-			// TODO: Log
+			Log.error("Stopping execution. Please provide one .apk file as input parameter.");
 			System.exit(0);
 		} else {
 			this.apkFile = args[0];
@@ -65,25 +65,9 @@ public class Noah {
 				this.sourceAndSinkFile = args[i];
 			} else if (args[i].equals("-d") || args[i].equals("-debug")) {
 				i++;
-				final String debug = args[i];
-				if (debug.equals("normal")) {
-					Log.setLogLevel(Log.NORMAL);
-				} else if (debug.equals("short")) {
-					Log.setLogLevel(Log.NORMAL);
-					Log.setShorten(true);
-				} else if (debug.equals("warning")) {
-					Log.setLogLevel(Log.WARNING);
-				} else if (debug.equals("error")) {
-					Log.setLogLevel(Log.ERROR);
-				} else if (debug.equals("debug")) {
-					Log.setLogLevel(Log.DEBUG);
-				} else if (debug.equals("detailed")) {
-					Log.setLogLevel(Log.DEBUG_DETAILED);
-				} else if (debug.equals("special")) {
-					Log.setLogLevel(Log.DEBUG_SPECIAL);
-				} else {
-					Log.setLogLevel(Integer.valueOf(debug).intValue());
-				}
+				CLIHelper.evaluateLogLevel(args[i]);
+			} else if (args[i].equals("-keep") || args[i].equals("-k")) {
+				this.deleteFiles = false;
 			}
 		}
 
@@ -126,7 +110,7 @@ public class Noah {
 
 			// Step 3) Disassemble
 			Log.msg("Step 3/4: Finding sources & sinks in app.", Log.NORMAL);
-			final SourceAndSinkFinder sasf = new SourceAndSinkFinder(this.apkFile);
+			final SourceAndSinkFinder sasf = new SourceAndSinkFinder(this.apkFile, this.deleteFiles);
 			final Collection<Triple> sourcesAndSinksFound = sasf.getTriples();
 			if (Log.logIt(Log.DEBUG_DETAILED)) {
 				Log.msg("*** Sources & Sinks (found) ***", Log.DEBUG_DETAILED);
@@ -146,6 +130,8 @@ public class Noah {
 			// Step 5) Create and store AQL-Answer
 			final Answer answer = new Answer();
 			answer.setFlows(o.getFlows());
+			answer.setSources(o.getSources());
+			answer.setSinks(o.getSinks());
 			AnswerHandler.createXML(answer, outputFile);
 
 			// Step 6) Output adapted SourcesAndSinks.txt
